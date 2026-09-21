@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quel instrument es-tu ?</title>
+    <!-- Script officiel de Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Variables liées au thème Telegram (s'adapte au mode sombre/clair) */
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #1c1c1e);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --btn-color: var(--tg-theme-button-color, #0a84ff);
+            --btn-text-color: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            --hint-color: var(--tg-theme-hint-color, #8e8e93);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Système de Vues (Screens) */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s ease;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Barre de progression */
+        .progress-wrapper {
+            width: 100%; height: 12px;
+            background: var(--secondary-bg);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 100%; width: 0%;
+            background: var(--btn-color);
+            border-radius: 20px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Questions et Boutons */
+        h2.question-title { font-size: 22px; margin-bottom: 25px; line-height: 1.3; }
+        
+        .options { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .btn {
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            border: 2px solid transparent;
+            padding: 16px; border-radius: 14px;
+            font-size: 16px; font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn:active {
+            transform: scale(0.97);
+            background: var(--btn-color);
+            color: var(--btn-text-color);
+            border-color: var(--btn-color);
+        }
+
+        /* Écran de Chargement Fake */
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid var(--secondary-bg);
+            border-top: 5px solid var(--btn-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-text { font-size: 18px; font-weight: bold; color: var(--hint-color); min-height: 25px; }
+
+        /* Écran de Résultat */
+        .result-title {
+            font-size: 32px; font-weight: 900;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        /* Halo et Saxophone */
+        .halo-container { position: relative; margin: 40px 0; display: flex; justify-content: center; align-items: center; }
+        .halo {
+            position: absolute; width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, rgba(255, 215, 0, 0) 70%);
+            border-radius: 50%; z-index: -1;
+            animation: pulse 2s infinite alternate ease-in-out;
+        }
+        .sax-img {
+            width: 180px; height: auto; z-index: 1;
+            /* Placeholder par défaut - tu pourras remplacer le src */
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.5));
+            animation: saxDance 1.2s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+        }
+        
+        @keyframes saxDance {
+            0% { transform: rotate(-12deg) scale(0.95); }
+            100% { transform: rotate(12deg) scale(1.05); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(1.3); opacity: 1; }
+        }
+
+        /* Bouton de Partage */
+        .btn-primary {
+            background: var(--btn-color);
+            color: var(--btn-text-color);
+            width: 100%;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(10, 132, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- ECRAN QUIZ -->
+    <div id="quiz-screen" class="screen active">
+        <div class="progress-wrapper">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <h2 id="question-text" class="question-title">Chargement...</h2>
+        <div id="options-container" class="options"></div>
+    </div>
+
+    <!-- ECRAN CHARGEMENT FAKE -->
+    <div id="loading-screen" class="screen">
+        <div class="spinner"></div>
+        <div id="loader-text" class="loader-text">Analyse...</div>
+    </div>
+
+    <!-- ECRAN RESULTAT -->
+    <div id="result-screen" class="screen">
+        <h1 class="result-title">TU ES LE SAXOPHONE TÉNOR !</h1>
+        
+        <div class="halo-container">
+            <div class="halo"></div>
+            <!-- L'image du Saxophone (URL placeholder que tu peux changer) -->
+            <img src="https://cdn-icons-png.flaticon.com/512/1793/1793132.png" alt="Saxophone" class="sax-img">
+        </div>
+
+        <button class="btn btn-primary" onclick="shareResult()">Partager mon résultat 🎷</button>
+    </div>
+</div>
+
+<script>
+    // Initialisation de l'API Telegram
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Déploie l'app en grand format
+
+    // --- BASE DE DONNÉES DES QUESTIONS ---
+    // Pour ajouter des questions plus tard, ajoute simplement des objets ici
+    const questions = [
+        {
+            q: "Ton coktail pref ;)",
+            options: ["Le whisky CACA", "Le vodka pipi", "Le Tek PAF"]
+        },
+        {
+            q: "Ton dictateur pref",
+            options: ["Mussolini", "Bebouze", "Soubaltrou"]
+        },
+        {
+            q: "Ton endroit pour un mariage révé",
+            options: ["gare du nord", "le 3DKR", "Chatlet les halles"]
+        }
+    ];
+
+    let currentIndex = 0;
+
+    // --- NAVIGATION DES ECRANS ---
+    const screens = {
+        quiz: document.getElementById('quiz-screen'),
+        loading: document.getElementById('loading-screen'),
+        result: document.getElementById('result-screen')
+    };
+
+    function showScreen(screenId) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenId].classList.add('active');
+    }
+
+    // --- LOGIQUE DU QUIZ ---
+    function renderQuestion() {
+        const qObj = questions[currentIndex];
+        document.getElementById('question-text').innerText = qObj.q;
+
+        // Met à jour la barre de progression
+        const progress = (currentIndex / questions.length) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = ''; // Nettoyer les anciens boutons
+
+        qObj.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = opt;
+            btn.onclick = () => handleAnswer();
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function handleAnswer() {
+        // Feedback Haptique natif Telegram
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        currentIndex++;
+        if (currentIndex < questions.length) {
+            renderQuestion();
+        } else {
+            startFakeLoading();
+        }
+    }
+
+    // --- LOGIQUE DU CHARGEMENT FAKE ---
+    function startFakeLoading() {
+        showScreen('loading');
+        // La barre est remplie à 100% visuellement
+        document.getElementById('progress-bar').style.width = '100%';
+
+        const fakeTexts = [
+            "Analyse de ton aura musicale (<1000)...",
+            "Calcul de ton groove (~67)...",
+            "Consultation des dieux du Cuivre..."
+        ];
+        
+        let textIdx = 0;
+        const loaderEl = document.getElementById('loader-text');
+        loaderEl.innerText = fakeTexts[0];
+
+        // Change le texte toutes les secondes
+        const textInterval = setInterval(() => {
+            textIdx++;
+            if (textIdx < fakeTexts.length) {
+                loaderEl.innerText = fakeTexts[textIdx];
+            }
+        }, 1000);
+
+        // Au bout de 3 secondes, révélation finale !
+        setTimeout(() => {
+            clearInterval(textInterval);
+            showResult();
+        }, 3000);
+    }
+
+    // --- RÉVÉLATION FINALE ---
+    function showResult() {
+        showScreen('result');
+        
+        if (tg.HapticFeedback) {
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        
+        playJazzAudio();
+    }
+
+    // --- GÉNERATEUR AUDIO 100% VANILLA JS (API WEB AUDIO) ---
+    // Simule un accord triomphal de cuivres/jazz sans fichier mp3 externe
+    function playJazzAudio() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            const now = ctx.currentTime;
+
+            // Fonction pour générer une note au style "cuivre" (onde en dent de scie)
+            const playNote = (freq, startTime, duration) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                const filter = ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, startTime);
+
+                // Filtre LowPass pour mimer un son de cuivre
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, startTime);
+                filter.frequency.exponentialRampToValueAtTime(3000, startTime + 0.1); // Attaque
+                filter.frequency.exponentialRampToValueAtTime(100, startTime + duration); // Relâchement
+
+                // Enveloppe sonore
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.4, startTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+
+            // Accord de victoire Jazzy (Ex: Un beau Bb Majeur 7)
+            playNote(233.08, now, 2); // Bb3
+            playNote(293.66, now, 2); // D4
+            playNote(349.23, now, 2); // F4
+            playNote(440.00, now, 2); // A4
+            
+        } catch (e) {
+            console.error("Web Audio API non supporté sur ce navigateur", e);
+        }
+    }
+
+    // --- SYSTÈME DE PARTAGE ---
+    function shareResult() {
+        // Remplace 'ton_bot_username' par le @ de ton bot Telegram hébergeant la Web App
+        const appLink = "https://t.me/TON_BOT_USERNAME/app"; 
+        const message = "L'algo a parlé, je suis un Saxophone Ténor 🎷 ! Fais le test pour découvrir ton instrument : " + appLink;
+        
+        const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(appLink)}&text=${encodeURIComponent(message)}`;
+        
+        // Utilisation de la méthode Telegram native
+        tg.openTelegramLink(telegramUrl);
+    }
+
+    // Démarrage du jeu
+    renderQuestion();
+
+</script>
+
+</body>
+</html>
