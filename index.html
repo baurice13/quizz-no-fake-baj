@@ -342,13 +342,16 @@
 
     // --- SYSTÈME DE PARTAGE ---
     function shareResult() {
-        // Remplace 'ton_bot_username' par le @ de ton bot Telegram hébergeant la Web App
+        // Ton vrai lien de bot
         const appLink = "https://t.me/quizz_baj_vrai_bot/vrai"; 
-        const message = "L'algo a parlé, je suis un Saxophone Ténor 🎷 ! Fais le test pour découvrir ton instrument : " + appLink;
         
+        // Le texte SANS le lien à la fin (Telegram l'ajoutera tout seul)
+        const message = "L'algo a parlé, je suis un Saxophone Ténor 🎷 ! Fais le test pour découvrir ton instrument :";
+        
+        // On génère le lien de partage Telegram
         const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(appLink)}&text=${encodeURIComponent(message)}`;
         
-        // Utilisation de la méthode Telegram native
+        // Ouvre la fenêtre de partage dans Telegram
         tg.openTelegramLink(telegramUrl);
     }
 
