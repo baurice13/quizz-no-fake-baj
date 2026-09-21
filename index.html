@@ -173,7 +173,7 @@
         <div class="halo-container">
             <div class="halo"></div>
             <!-- L'image du Saxophone -->
-            <img src="https://i.ibb.co/R4d6CHPk/SELMER-sax-tenor-Signature-verni-lacquered.webp" alt="Saxophone Ténor Selmer" class="sax-img">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Tenor_saxophone.png/250px-Tenor_saxophone.png" alt="Saxophone Ténor" class="sax-img">
         </div>
 
         <button class="btn btn-primary" onclick="shareResult()">Partager mon résultat 🎷</button>
@@ -343,7 +343,7 @@
     // --- SYSTÈME DE PARTAGE ---
     function shareResult() {
         // Remplace 'ton_bot_username' par le @ de ton bot Telegram hébergeant la Web App
-        const appLink = "https://t.me/TON_BOT_USERNAME/app"; 
+        const appLink = "https://t.me/quizz_baj_vrai_bot/vrai"; 
         const message = "L'algo a parlé, je suis un Saxophone Ténor 🎷 ! Fais le test pour découvrir ton instrument : " + appLink;
         
         const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(appLink)}&text=${encodeURIComponent(message)}`;
